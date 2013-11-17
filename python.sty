@@ -39,79 +39,98 @@
 \RequirePackage{verbatim}
 \RequirePackage{color}
 \RequirePackage{ifplatform}
-
-\newwrite\@out
-\newwrite\@module
-\newread\@retcode
+\RequirePackage{fancyvrb}
+\RequirePackage{inputenc}
+\RequirePackage{kvoptions}
 
 % Put the resulting Python code in separate files.
+\newcommand{\@outname}{\jobname\arabic{@PythonEnvironmentCounter}}
 \newcounter{@PythonEnvironmentCounter}
 \setcounter{@PythonEnvironmentCounter}{1}
-\newcommand{\@outname}{\jobname\arabic{@PythonEnvironmentCounter}}
 
-\begingroup \catcode `|=0 \catcode `[=1
-\catcode`]=2 \catcode `\{=12 \catcode `\}=12
-\catcode`\\=12 |gdef|@xpython#1\end{python}[|immediate|write|@out[#1]|end[python]]
-|endgroup
-
-\def\python{\kernel@ifnextchar [{\@python}{\@python[]}}
-
-\def\@python[#1]{%
-\gdef\@pythoninclude{#1}
-\immediate\openout\@out=\@outname.py
-\newlinechar='15
-\begingroup \catcode`\^^M=12 %
-\let\do\@makeother\dospecials\obeyspaces%
-\@xpython}
-
-\def\endpython{%
-\endgroup
-\immediate\closeout\@out
-\@writemodule
-\ifwindows
-\immediate\write18{type \@pythoninclude\space\@outname.py 2> nul: | python > \@outname.py.out 2> \@outname.py.err & call echo ^\@percentchar ERRORLEVEL^\@percentchar > \@outname.rc}
-\else
-\immediate\write18{cat \@pythoninclude\space\@outname.py | /usr/bin/env python > \@outname.py.out 2> \@outname.py.err; echo -n $? > \@outname.rc}
-\fi
-\immediate\input\@outname.py.out
-
-% Read the return code of the executed Python script.
-\immediate\openin\@retcode=\@outname.rc
-\immediate\read\@retcode to \rc
-\immediate\closein\@retcode
-
-% If the return code isn't zero then include
-% the traceback.
-\ifnumequal{\rc}{0}{}{%
-    \begingroup
-        \color{red}
-        \verbatiminput{\@outname.py.err}
-    \endgroup
+% Package Options
+\SetupKeyvalOptions{
+	family=PYT,
+	prefix=PYT@
 }
 
-\immediate\stepcounter{@PythonEnvironmentCounter}
+\DeclareVoidOption{subfolder}{ 
+  \renewcommand{\@outname}{py/\jobname\arabic{@PythonEnvironmentCounter}}
 }
 
-\def\@writemodule{%
-\immediate\openout\@module=latex.py
-\immediate\write\@module{jobname="\@outname"}
-\immediate\closeout\@module}
+\DeclareStringOption[python]{bin}[python]
 
-% BUGS:
-%
-% \immediate\write18{cat \@pythoninclude\space\jobname.py | python > \jobname.py.out 2>\jobname.py.err}
-%
-% 1. Watch out for indentation done by aucTeX in Emacs
-%
-% 2. Let the package accept a "final version" option, such
-% that the output of each python run is saved such that it can be
-% inserted into the document by hand 
-% (conference, journals are not likely to compile with
-% shell_escape or have python).
-%
-% \gdef\@prepython{}
-% \def\prepython#1{%
-% \gdef\@prepython{#1}
-% }
-% sed -e 's/^  //g' cluster.py
-% \immediate\write18{\@prepython\space\jobname.py > \
+\ProcessKeyvalOptions*
+
+\newcommand{\@pythonbin}{\PYT@bin \space runpy.py \space}
+
+\typeout{PYTHON: Binary \@pythonbin}
+
+\newread\@retcode
+\newread\@diff
+
+\def\executecode{
+    \typeout{PYTHON: Running file \@outname.py}
+	\immediate\write18{\@pythonbin \space\@outname.py}
+	
+	\inputencoding{utf8}
+	\input{\@outname}
+	
+	% Read the return code of the executed Python script.
+	\immediate\openin\@retcode=\@outname.py.rc
+	\immediate\read\@retcode to \rc
+	\immediate\closein\@retcode
+	
+	% If the return code isn't zero then include
+	% the traceback.
+	\ifnumequal{\rc}{0}{
+	    \typeout{PYTHON: Run was successful}
+	}{%
+	    \typeout{PYTHON: Run failed}
+	    \begingroup
+	        \color{red}
+	        \verbatiminput{\@outname.py.err}
+	    \endgroup
+	}
+
+	% Copy to the current script to keep a cache.
+	\immediate\write18{cp \@outname.py \@outname.py.cache}
+	\immediate\write18{rm \@outname.py}
+	
+}
+
+\newenvironment{python}
+{
+	\typeout{PYTHON: Writing file \@outname.py}
+	\deactivateeightbit\VerbatimOut{\@outname.py}}
+{
+	\endVerbatimOut
+
+	\immediate\write18{cmp \@outname.py \@outname.py.cache; echo $? > \@outname.cmp.rc}
+	\immediate\openin\@diff=\@outname.cmp.rc
+	\immediate\read\@diff to \rc
+	\immediate\closein\@diff
+
+	\ifnumequal{\rc}{0}{
+		% Old file and new file are identical
+		\typeout{PYTHON: No need to run the script again}
+		\inputencoding{utf8}
+		\input{\@outname}
+	}{
+		% Old file and new file are different or old is not present
+		\executecode
+	}
+
+	\immediate\stepcounter{@PythonEnvironmentCounter}
+}
+
+\newcommand{\deactivateeightbit}{%
+  \count@=127
+  \loop
+    \catcode\count@=12
+    \ifnum\count@<255
+    \advance\count@\@ne
+  \repeat
+}
+
+
