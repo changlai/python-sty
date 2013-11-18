@@ -12,10 +12,15 @@
 %% along with this program; if not, write to the Free Software
 %% Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 %%
+
+%% 0.4 Version by Hernán Grecco <hgrecco@gmail.com>
+%% 0.3 Version by James Brotchie <brotchie@gmail.com>
+%%
 %% Author: Martin R. Ehmsen, ehmsen@imada.sdu.dk.
 %% Department of Mathematics and Computer Science,
 %% University of Southern Denmark, DK
 %%
+
 %% You can find an online copy of the GPL at
 %% http://www.gnu.org/copyleft/gpl.html .
 %% 
@@ -23,18 +28,36 @@
 %% This can either be done by passing -shell-escape as an option to
 %% latex or by adding/changing "shell_escape = t" in your texmf.cnf .
 
-% 0.21 -> 0.3: Intermediate files are now stored with different filenames.
-% The return code of each Python shell execution is stored in an .rc file.
-% Any stderr output of a failed Python shell execution is inserted as
-% a red verbatim in the resulting document.
-%                                -- James Brotchie <brotchie@gmail.com>
+
+% Python-sty Changelog
+% ====================
 %
-% 0.2 -> 0.21: Moved \newwrite\@module from \@writemodule and out, since
-% no more than 15 \newwrites are allowed (and the previous version created a new
-% every time \@writemodule was called.
+%
+% 0.4 (unreleased)
+% ----------------
+% -  
+%
+% 0.3 (2011-12-22)
+% ----------------
+%
+% - Intermediate files are now stored with different filenames.
+% - The return code of each Python shell execution is stored 
+%   in an .rc file.
+% - Any stderr output of a failed Python shell execution is 
+%   inserted as a red verbatim in the resulting document.
+%                     -- James Brotchie <brotchie@gmail.com>
+%
+% 0.21
+% ----
+%
+% - Moved \newwrite\@module from \@writemodule and out, since 
+%   no more than 15 \newwrites are allowed (and the previous 
+%   version created a new every time \@writemodule was called.
+% 
+%
 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{python}[2011/12/22 v0.3 Python in LaTeX]
+\ProvidesPackage{python}[2013/11/17 v0.4 Python in LaTeX]
 \RequirePackage{etoolbox}
 \RequirePackage{verbatim}
 \RequirePackage{color}
