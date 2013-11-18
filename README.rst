@@ -12,7 +12,7 @@ Copy `python.sty` and `runpy.py` side by side with your document.
 Using
 -----
 
-In you LaTeX document insert:
+In you LaTeX document insert::
 
     \usepackage{python}
     ...
@@ -20,9 +20,9 @@ In you LaTeX document insert:
     print("42")
     \end{python}
 
-Compile the document with the shell escape option and of course Python installed:
+Compile the document with the shell escape option and of course Python installed::
 
-% latex -shell-escape document.tex
+    $ latex -shell-escape document.tex
 
 or insert/change "shell_escape = t" in your texmf.cnf
 
@@ -34,12 +34,14 @@ either the ``-enable-write18`` or ``-shell-escape`` command line argument to ena
 Package options
 ---------------
 
-The package takes an optional key-value option (`bin`) that can be used to specify the python binary to use. (If not present `python` is used)
+The package takes an optional key-value option (`bin`) that can be used to specify the 
+python binary to use. (If not present `python` is used)::
  
      \usepackage[bin=python2.6]{python}
      
 
-Python scripts, output, error and return files are saved by default in the same folder as the documents and the folder gets crowded quite easily, If the word `subfolder` is added to the options, theses files will be served to a subfolder named `py`:
+Python scripts, output, error and return files are saved by default in the same folder as the documents and the folder gets crowded quite easily, If the word `subfolder` is 
+added to the options, these files will be served to a subfolder named `py`::
 
      \usepackage[subfolder]{python}
 
