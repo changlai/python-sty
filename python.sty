@@ -96,6 +96,13 @@
     \typeout{PYTHON: Running file \@outname.py}
 	\immediate\write18{\@pythonbin \space\@outname.py}
 	
+	% Copy to the current script to keep a cache.
+	\immediate\write18{cp \@outname.py \@outname.py.cache}
+	\immediate\write18{rm \@outname.py}
+	
+}
+
+\def\usecoderesult{
 	\inputencoding{utf8}
 	\input{\@outname}
 	
@@ -115,11 +122,6 @@
 	        \verbatiminput{\@outname.py.err}
 	    \endgroup
 	}
-
-	% Copy to the current script to keep a cache.
-	\immediate\write18{cp \@outname.py \@outname.py.cache}
-	\immediate\write18{rm \@outname.py}
-	
 }
 
 \newenvironment{python}
@@ -137,12 +139,11 @@
 	\ifnumequal{\rc}{0}{
 		% Old file and new file are identical
 		\typeout{PYTHON: No need to run the script again}
-		\inputencoding{utf8}
-		\input{\@outname}
 	}{
 		% Old file and new file are different or old is not present
 		\executecode
 	}
+	\usecoderesult
 
 	\immediate\stepcounter{@PythonEnvironmentCounter}
 }
