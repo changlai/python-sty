@@ -67,7 +67,7 @@
 \RequirePackage{kvoptions}
 
 % Put the resulting Python code in separate files.
-\newcommand{\@outname}{\jobname\arabic{@PythonEnvironmentCounter}}
+\newcommand{\@PYT@outname}{\jobname\arabic{@PythonEnvironmentCounter}}
 \newcounter{@PythonEnvironmentCounter}
 \setcounter{@PythonEnvironmentCounter}{1}
 
@@ -78,7 +78,7 @@
 }
 
 \DeclareVoidOption{subfolder}{ 
-  \renewcommand{\@outname}{py/\jobname\arabic{@PythonEnvironmentCounter}}
+  \renewcommand{\@PYT@outname}{py/\jobname\arabic{@PythonEnvironmentCounter}}
 }
 
 \DeclareStringOption[python]{bin}[python]
@@ -89,51 +89,51 @@
 
 \typeout{PYTHON: Binary \@pythonbin}
 
-\newread\@retcode
-\newread\@diff
+\newread\@PYT@retcode
+\newread\@PYT@diff
 
-\def\copytocache{
+\newcommand{\@PYT@copytocache}{
     \ifwindows
-    		\immediate\write18{copy \@outname.py \@outname.py.cache}
+    		\immediate\write18{copy \@PYT@outname.py \@PYT@outname.py.cache}
     \else
-    		\immediate\write18{cp \@outname.py \@outname.py.cache}
+    		\immediate\write18{cp \@PYT@outname.py \@PYT@outname.py.cache}
     \fi
 }
 
-\def\delscript{
+\newcommand{\@PYT@deletescript}{
 	\ifwindows
-		\immediate\write18{del \@outname.py}
+		\immediate\write18{del \@PYT@outname.py}
 	\else
-		\immediate\write18{rm \@outname.py}
+		\immediate\write18{rm \@PYT@outname.py}
 	\fi
 }
 
-\def\comparefiles{
+\newcommand{\@PYT@comparefiles}{
 	\ifwindows
-		\immediate\write18{fc \@outname.py \@outname.py.cache & call echo ^\@percentchar ERRORLEVEL ^\@percentchar > \@outname.cmp.rc}
+		\immediate\write18{fc \@PYT@outname.py \@PYT@outname.py.cache & call echo ^\@percentchar ERRORLEVEL ^\@percentchar > \@PYT@outname.cmp.rc}
 	\else
-		\immediate\write18{cmp \@outname.py \@outname.py.cache; echo $? > \@outname.cmp.rc}
+		\immediate\write18{cmp \@PYT@outname.py \@PYT@outname.py.cache; echo $? > \@PYT@outname.cmp.rc}
 	\fi
 }
 
-\def\executescript{
-    \typeout{PYTHON: Running file \@outname.py}
-	\immediate\write18{\@pythonbin \space\@outname.py}
+\newcommand{\@PYT@executescript}{
+    \typeout{PYTHON: Running file \@PYT@outname.py}
+	\immediate\write18{\@pythonbin \space\@PYT@outname.py}
 	
 	% Copy to the current script to keep a cache.
-	\copytocache
-	\delscript
+	\@PYT@copytocache
+	\@PYT@deletescript
 	
 }
 
-\def\usescriptresult{
+\newcommand{\@PYT@returncode}{
 	\inputencoding{utf8}
-	\input{\@outname}
+	\input{\@PYT@outname}
 	
 	% Read the return code of the executed Python script.
-	\immediate\openin\@retcode=\@outname.py.rc
-	\immediate\read\@retcode to \rc
-	\immediate\closein\@retcode
+	\immediate\openin\@PYT@retcode=\@PYT@outname.py.rc
+	\immediate\read\@PYT@retcode to \rc
+	\immediate\closein\@PYT@retcode
 	
 	% If the return code isn't zero then include
 	% the traceback.
@@ -143,36 +143,36 @@
 	    \typeout{PYTHON: Run failed}
 	    \begingroup
 	        \color{red}
-	        \verbatiminput{\@outname.py.err}
+	        \verbatiminput{\@PYT@outname.py.err}
 	    \endgroup
 	}
 }
 
 \newenvironment{python}
 {
-	\typeout{PYTHON: Writing file \@outname.py}
-	\deactivateeightbit\VerbatimOut{\@outname.py}}
+	\typeout{PYTHON: Writing file \@PYT@outname.py}
+	\@PYT@deactivateeightbit\VerbatimOut{\@PYT@outname.py}}
 {
 	\endVerbatimOut
 
-	\comparefiles
-	\immediate\openin\@diff=\@outname.cmp.rc
-	\immediate\read\@diff to \rc
-	\immediate\closein\@diff
+	\@PYT@comparefiles
+	\immediate\openin\@PYT@diff=\@PYT@outname.cmp.rc
+	\immediate\read\@PYT@diff to \rc
+	\immediate\closein\@PYT@diff
 
 	\ifnumequal{\rc}{0}{
 		% Old file and new file are identical
 		\typeout{PYTHON: No need to run the script again}
 	}{
 		% Old file and new file are different or old is not present
-		\executescript
+		\@PYT@executescript
 	}
-	\usescriptresult
+	\@PYT@returncode
 
 	\immediate\stepcounter{@PythonEnvironmentCounter}
 }
 
-\newcommand{\deactivateeightbit}{%
+\newcommand{\@PYT@deactivateeightbit}{%
   \count@=127
   \loop
     \catcode\count@=12
