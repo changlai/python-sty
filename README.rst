@@ -46,7 +46,7 @@ added to the options, these files will be served to a subfolder named `py`::
      \usepackage[subfolder]{python}
 
 
-If -output-directory option is used, it must also be indicated here using `outputdir` option.
+If -output-directory option is used, it must also be indicated here using `outputdir` option::
 
      \usepackage[outputdir=build]{python}
      
