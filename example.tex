@@ -28,20 +28,20 @@ def identity(n):
 
 # Displays identity matrices for
 # n \in {1, 2, ..., 5}.
-print '\n'.join([
+print( '\n'.join([
     r'\begin{equation*}',
     r'\begin{array}{%s}' % (5*'c',),
     '&'.join(identity(i) for i in range(1,6)),
     r'\end{array}.',
     r'\end{equation*}',
-])
+]))
 \end{python}
 
 \begin{python}
 # Create a deliberate exception.
-print 'This text will be displayed.'
-print 1/0
-print 'This text won\'t be displayed.'
+print('This text will be displayed.')
+print(1/0)
+print('This text won\'t be displayed.')
 \end{python}
 
 \end{document}
