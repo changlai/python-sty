@@ -6,7 +6,7 @@ This package enables you to embed Python code (www.python.org) in LaTeX and inse
 Installing
 ----------
 
-Copy `python.sty` and `runpy.py` side by side with your document.
+Copy `python.sty` side by side with your document.
 
 
 Using
@@ -46,6 +46,11 @@ added to the options, these files will be served to a subfolder named `py`::
      \usepackage[subfolder]{python}
 
 
+If -output-directory option is used, it must also be indicated here using `outputdir` option.
+
+     \usepackage[outputdir=build]{python}
+     
+
 Package content
 ---------------
 
@@ -62,5 +67,3 @@ python.sty
     A LaTeX package that allows direct embedding of python scripts in LaTeX
     documents.
     
-runpy.py
-    A helper python script.
