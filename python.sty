@@ -13,6 +13,7 @@
 %% Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 %%
 
+%% 0.41 Version by Changlai Du <duchanglai@gmail.com>
 %% 0.4 Version by Hernán Grecco <hgrecco@gmail.com>
 %% 0.3 Version by James Brotchie <brotchie@gmail.com>
 %%
@@ -31,6 +32,11 @@
 
 % Python-sty Changelog
 % ====================
+%
+% 0.41 (2019-01-23)
+% ----------------
+% - Options to support -output-directory.
+% - Remove the need of runpy.py but generate it from this package.
 %
 %
 % 0.4 (2013-11-28)
@@ -62,75 +68,136 @@
 %
 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{python}[2013/11/17 v0.4 Python in LaTeX]
+\ProvidesPackage{python}[2019/01/23 v0.41 Python in LaTeX]
 \RequirePackage{etoolbox}
 \RequirePackage{verbatim}
 \RequirePackage{color}
 \RequirePackage{ifplatform}
 \RequirePackage{fancyvrb}
-\RequirePackage{inputenc}
+\RequirePackage[utf8]{inputenc}
 \RequirePackage{kvoptions}
+
+%% I want to find a way to do the following without using temporary files
+%% 1) define the python environment 
+%% 2) pipe its content to python and then
+%% 3) input the results. 
+%% The following three lines of code accomplish 1) and 3)(?), but fail to pipe
+%% verbatim to python. Is it possible?  
+%\def\FVB@python{\FVB@SaveVerbatim{python}}
+%\def\FVE@python{\FVE@SaveVerbatim}  %\immediate\@@input|"echo \UseVerbatim{code}|python"}
+%\DefineVerbatimEnvironment{python}{python}{}
+
 
 % Put the resulting Python code in separate files.
 \newcommand{\@PYT@outname}{\jobname\arabic{@PythonEnvironmentCounter}}
 \newcounter{@PythonEnvironmentCounter}
 \setcounter{@PythonEnvironmentCounter}{1}
 
+
 % Package Options
 \SetupKeyvalOptions{
 	family=PYT,
 	prefix=PYT@
 }
-
+\DeclareStringOption[.]{outputdir}[.]
 \DeclareVoidOption{subfolder}{ 
   \renewcommand{\@PYT@outname}{py/\jobname\arabic{@PythonEnvironmentCounter}}
 }
-
 \DeclareStringOption[python]{bin}[python]
-
 \ProcessKeyvalOptions*
 
-\newcommand{\@pythonbin}{\PYT@bin \space runpy.py \space}
 
+% Output run.py
+\begin{VerbatimOut}{\jobname.run.py}
+# -*- coding: utf-8 -*-
+
+import sys
+
+try:
+    reload(sys).setdefaultencoding("UTF-8")
+except:
+    pass
+
+
+filename = sys.argv[1]
+
+with open(filename[:-3] + '.tex', "w") as fout:
+    sys.stdout = fout
+    with open(filename + '.err', "w") as ferr:
+        with open(filename + '.rc', 'w') as frc:
+            with open(filename) as f:
+                try:
+                    code = compile(f.read(), filename, 'exec')
+                    exec(code, {'print': fout.write})
+                    frc.write('0')
+                except Exception as e:
+                    frc.write('1')
+                    import traceback
+                    ferr.write(traceback.format_exc())
+                    raise e
+\end{VerbatimOut}
+\typeout{PYTHON: Output \jobname.run.py}
+
+
+\newcommand{\@pythonbin}{\PYT@bin \space\jobname.run.py\space}
 \typeout{PYTHON: Binary \@pythonbin}
 
-\newread\@PYT@retcode
-\newread\@PYT@diff
+\newcommand{\@PYT@copyrunpy}{
+    \ifwindows
+        \count@ = \escapechar
+        \escapechar = -1
+    	\immediate\write18{copy \PYT@outputdir\string\\\jobname.run.py \jobname.run.py /y}
+        \escapechar = \count@
+    \else
+    	\immediate\write18{cp \PYT@outputdir/\jobname.run.py \jobname.run.py}
+    \fi
+}
 
 \newcommand{\@PYT@copytocache}{
     \ifwindows
-    		\immediate\write18{copy \@PYT@outname.py \@PYT@outname.py.cache}
+        \count@ = \escapechar
+        \escapechar = -1
+    	\immediate\write18{copy \PYT@outputdir\string\\\@PYT@outname.py \PYT@outputdir\string\\\@PYT@outname.py.cache /y}
+        \escapechar = \count@
     \else
-    		\immediate\write18{cp \@PYT@outname.py \@PYT@outname.py.cache}
+    	\immediate\write18{cp \PYT@outputdir/\@PYT@outname.py \PYT@outputdir/\@PYT@outname.py.cache}
     \fi
 }
 
 \newcommand{\@PYT@deletescript}{
 	\ifwindows
-		\immediate\write18{del \@PYT@outname.py}
+        \count@ = \escapechar
+        \escapechar = -1
+    	\immediate\write18{del \PYT@outputdir\string\\\@PYT@outname.py}
+        \escapechar = \count@
 	\else
-		\immediate\write18{rm \@PYT@outname.py}
+		\immediate\write18{rm \PYT@outputdir/\@PYT@outname.py}
 	\fi
 }
 
 \newcommand{\@PYT@comparefiles}{
 	\ifwindows
-		\immediate\write18{fc \@PYT@outname.py \@PYT@outname.py.cache & call echo ^\@percentchar ERRORLEVEL ^\@percentchar > \@PYT@outname.cmp.rc}
+        \count@ = \escapechar
+        \escapechar = -1
+		\immediate\write18{fc \PYT@outputdir\string\\\@PYT@outname.py
+        \PYT@outputdir\string\\\@PYT@outname.py.cache & call echo ^\@percentchar
+        ERRORLEVEL^\@percentchar\space>\PYT@outputdir\string\\\@PYT@outname.cmp.rc}
+        \escapechar = \count@
 	\else
-		\immediate\write18{cmp \@PYT@outname.py \@PYT@outname.py.cache; echo $? > \@PYT@outname.cmp.rc}
+		\immediate\write18{cmp \PYT@outputdir/\@PYT@outname.py \PYT@outputdir/\@PYT@outname.py.cache; echo $? > \PYT@outputdir/\@PYT@outname.cmp.rc}
 	\fi
 }
 
 \newcommand{\@PYT@executescript}{
     \typeout{PYTHON: Running file \@PYT@outname.py}
-	\immediate\write18{\@pythonbin \space\@PYT@outname.py}
+	\immediate\write18{\@pythonbin \space\PYT@outputdir/\@PYT@outname.py}
 	
 	% Copy to the current script to keep a cache.
 	\@PYT@copytocache
 	\@PYT@deletescript
-	
 }
 
+\newread\@PYT@retcode
 \newcommand{\@PYT@returncode}{
 	\inputencoding{utf8}
 	\input{\@PYT@outname}
@@ -153,8 +220,20 @@
 	}
 }
 
+\newcommand{\@PYT@deactivateeightbit}{%
+  \count@=127
+  \loop
+    \catcode\count@=12
+    \ifnum\count@<255
+    \advance\count@\@ne
+  \repeat
+}
+
+
+\newread\@PYT@diff
 \newenvironment{python}
 {
+    \@PYT@copyrunpy
 	\typeout{PYTHON: Writing file \@PYT@outname.py}
 	\@PYT@deactivateeightbit\VerbatimOut{\@PYT@outname.py}}
 {
@@ -176,14 +255,3 @@
 
 	\immediate\stepcounter{@PythonEnvironmentCounter}
 }
-
-\newcommand{\@PYT@deactivateeightbit}{%
-  \count@=127
-  \loop
-    \catcode\count@=12
-    \ifnum\count@<255
-    \advance\count@\@ne
-  \repeat
-}
-
-
